@@ -1,0 +1,43 @@
+#include <Adafruit_NeoPixel.h>  //neopixel library
+#define PIN 12 //the arduino pin the strip is connected to
+#define NUMPIXELS 35 //# of LEDs in the strip
+
+Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_RGBW + NEO_KHZ800); //creating a neopixel object called strip
+//NEO_GRBW tells the library the LEDs use green to red to blue to white color order
+//NEO_KHZ800 is the communication speed, which is 800Hz
+void setup() {
+  strip.begin(); //initializes the strip
+  strip.show(); //sends data to the strip
+}
+
+void setAll(int r, int g, int b) { //sets all LEDs the same color
+  for (int i = 0; i < NUMPIXELS; i++) { //loops thru all the LEDs
+    strip.setPixelColor(i, strip.Color(r, g, b)); //sets each LED to the same rgb color
+  }
+  strip.show(); //updates
+}
+
+void fade(int r1, int g1, int b1, int r2, int g2, int b2, int steps, int delayTime) { //rg and b1 are start colors, and rg and b2 are end colors, steps is the frames between them, and delayTime is the time between frames
+  for (int i = 0; i <= steps; i++) { //loops thru frames
+    float t = (float)i / steps; //converts index into 0 = start 0.5 = middle, 1 = end
+    float tSine = 0.5 - 0.5 * cos(t * PI); //sine wave smoothing. starts slow, fast in the middle, and slows again
+
+//what is the current color in the moment?
+    int r = r1 + (r2 - r1) * tSine;
+    int g = g1 + (g2 - g1) * tSine;
+    int b = b1 + (b2 - b1) * tSine;
+//sets all LEDs into same color
+    setAll(r, g, b);
+    delay(delayTime); //speed of animation
+  }
+}
+
+void loop() {
+  fade(0, 120, 255, 255, 72, 176, 200, 10); //blue to pink
+  fade(255, 72, 176, 255, 116, 119, 200, 10); //pink to warm pink
+  fade(255, 116, 119, 255, 102, 94, 200, 10); //warm pink to red
+  fade(255, 102, 94, 255, 165, 0, 200, 10);   // red to orange
+  fade(255, 165, 0, 255, 232, 0, 200, 10); //orange to yellow
+  fade(255, 232, 0, 94, 200, 229, 200, 10); //yellow to aqua
+  fade(94, 200, 229, 0, 120, 255, 200, 10); //aqua back to blue
+}
