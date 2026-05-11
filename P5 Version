@@ -1,0 +1,158 @@
+//so! I left my light at 370, in my showcase room that I don't have access to. It's locked in there. I chose to pivot, and recreate the feeling and colors from the light but just in p5. the sketch detects movement and changes color faster if there is more movement. the central circle is inspired by my midterm, and i added particles to make this more dynamic and i wanted to try object oriented again. please enjoy! sorry it coudldn't be what it was meant to be!
+
+
+let video; //stores webcam feed
+let lastFrame; //stores the previous frame in order to compare it to the current
+let currentColor = 0; //stores the current color
+let nextColor = 1; //in order to transition to next color
+let colorInterpolation = 0; //checks if color is done, used to fade between colors
+let particles = []; //array to store particle objects!
+let motionAmount = 0; //how much movement is detected
+
+//my original palette for the light, rgb values stored in a arrays within an array!
+let palette = [
+  [0, 120, 255], //blue
+  [255, 72, 176], //pink
+  [255, 116, 119], //coral
+  [255, 102, 94], //red
+  [255, 165, 0], //orange
+  [255, 232, 0], //yellow
+  [94, 200, 229] //aqua
+];
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  video = createCapture(VIDEO); // https://p5js.org/reference/p5/createCapture/
+  //tells p5 to use camera
+  video.size(80, 60); //made the resolution very small because it lags if it's bigger
+  video.hide(); //does not show the video
+  lastFrame = createImage(80, 60); // https://p5js.org/reference/p5/createImage/
+  //saves previous frame
+  noStroke();
+  background(0);
+}
+
+//https://editor.p5js.org/bestesaylar/sketches/WFsPqG-8A
+//i was looking at this sketch as inspiration and figuring out how to set up the camera
+
+function draw() {
+  detectMotion();
+  updateColors();
+  let murr = map(motionAmount, 0, 25, 0.005, 0.05); //takes how much motion is detected and turns it into another range. so if there is more movement, the colors transition faster
+  colorInterpolation += murr; //moves te transition
+  if (colorInterpolation >= 1) { //until it reaches 1
+    colorInterpolation = 0; //resets to 0
+    currentColor = nextColor;//sets new current color
+    nextColor++; //moves on to next color
+
+  if (nextColor >= palette.length) { //checking to see if final color is reached
+    nextColor = 0; //if so, start at the beginning again
+    }
+  }
+//AI SECTION
+let easedT = 0.5 - 0.5 * cos(colorInterpolation * PI); //smooth easing curve
+let c1 = palette[currentColor]; // current color from the palette
+let c2 = palette[nextColor]; //the next palette color
+let r = lerp(c1[0], c2[0], easedT); //interpolates the red channel
+let g = lerp(c1[1], c2[1], easedT); //interpolates the green channel
+let b = lerp(c1[2], c2[2], easedT); //interpolates the blue channel
+//END AI SECTION
+background(r * 0.25, g * 0.25, b * 0.25, 40); //multiplying by 0.25 to achieve darker color, 40 alpha for the trailing
+
+  let particleCount = int(map(motionAmount, 0, 25, 0, 10)); //releasing particles based on how much motion the camera detects
+  for (let i = 0; i < particleCount; i++) { //iterating through particle count
+    let particlex = random(width);
+    let particley = random(height); //assigning random widths and heights
+
+    particles.push(
+      new Particle(particlex, particley, r, g, b) //creates a new particle object!
+    );
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) { //loops backwards through the particles bc they disappear over time
+    particles[i].update(); //updates particle with motion
+    particles[i].display(); //draws particle
+    if (particles[i].dead()) { //checks if its time is over
+      particles.splice(i, 1); //removes particle from array
+    }
+  }
+//center circle
+fill(r, g, b, 40); //current colors and 40 transparency
+ellipse(width/2, height/2, 300 + motionAmount * 20);
+}
+
+function detectMotion() {
+  video.loadPixels(); //loads pixels in order to be used for motion detection
+  //https://p5js.org/reference/p5/loadPixels/
+  lastFrame.loadPixels();
+  let movement = 0;
+  for (let i = 0; i < video.pixels.length; i += 4) { //looping through pixels. +4 because each pixel has r, g, b and a values
+    //stores rgb values of current frame
+    let r1 = video.pixels[i];
+    let g1 = video.pixels[i + 1];
+    let b1 = video.pixels[i + 2];
+    //stores rgb values from previous frame
+    let r2 = lastFrame.pixels[i];
+    let g2 = lastFrame.pixels[i + 1];
+    let b2 = lastFrame.pixels[i + 2];
+    
+    let diff = abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2); //compares differences in rgb values from the previous and current frame
+    movement += diff; //add the difference to the movement
+  }
+//AI
+  movement = movement/(video.pixels.length);
+//AI SECTION
+  
+motionAmount = lerp(motionAmount, movement, 0.1); //lerp smooths out motion
+lastFrame.copy(video, 0, 0, video.width, video.height, 0, 0, video.width, video.height); //copies current frame into previous frame storage in order to compare them
+}
+
+//class Particle, I wanted to give OOP another go
+class Particle {
+  constructor(x, y, r, g, b) {
+    this.x = x;
+    this.y = y;
+    this.xSpeed = random(-2, 2);
+    this.ySpeed = random(-2, 2);
+    this.size = random(20, 80); //random size
+    this.life = 255; //full opacity when it starts and dims whe it dies
+    this.r = r; //sets to the current color
+    this.g = g;
+    this.b = b;
+  }
+  update() {
+    this.x += this.xSpeed;
+    this.y += this.ySpeed;
+    this.life -= 3; //fades away
+  }
+  display() { //draws particles on the screen
+    fill( //sets particle color
+      this.r,
+      this.g,
+      this.b,
+      this.life
+    );
+    ellipse( //draws each circle
+      this.x,
+      this.y,
+      this.size //random size
+    );
+  }
+  dead() { //checks if particle is done
+    return this.life <= 0;
+  }
+}
+
+function updateColors() {
+  if (motionAmount > 10) { //if movement is drastic
+    for (let color of palette) { //iterates through each color in the palette
+      color[0] += random(-0.3, 0.3); //slightly changes the channel
+      color[1] += random(-0.3, 0.3);
+      color[2] += random(-0.3, 0.3);
+
+      color[0] = constrain(color[0], 0, 255); //doesn't go beyond the values 0 to 255 to stay within the range
+      color[1] = constrain(color[1], 0, 255);
+      color[2] = constrain(color[2], 0, 255);
+    }
+  }
+}
