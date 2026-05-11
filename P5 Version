@@ -99,9 +99,7 @@ function detectMotion() {
     let diff = abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2); //compares differences in rgb values from the previous and current frame
     movement += diff; //add the difference to the movement
   }
-//AI
   movement = movement/(video.pixels.length);
-//AI SECTION
   
 motionAmount = lerp(motionAmount, movement, 0.1); //lerp smooths out motion
 lastFrame.copy(video, 0, 0, video.width, video.height, 0, 0, video.width, video.height); //copies current frame into previous frame storage in order to compare them
